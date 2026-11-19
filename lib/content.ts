@@ -15,6 +15,14 @@ export const clinic = {
   ]
 };
 
+export const contactTopics = [
+  "Konsultacja stomatologiczna",
+  "Stomatologia estetyczna",
+  "Ortodoncja",
+  "Higienizacja",
+  "Inne pytanie"
+] as const;
+
 export const treatments = [
   { number: "01", icon: "tooth", title: "Stomatologia zachowawcza", subtitle: "Zdrowie od podstaw", description: "Profilaktyka, higienizacja i leczenie próchnicy w spokojnej, komfortowej atmosferze.", href: "#cennik" },
   { number: "02", icon: "sparkles", title: "Stomatologia estetyczna", subtitle: "Naturalne piękno", description: "Wybielanie, bonding i odbudowa uśmiechu z dbałością o każdy detal.", href: "#cennik" },
