@@ -67,35 +67,13 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activePrice, setActivePrice] = useState<string>(priceGroups[0].id);
   const [form, setForm] = useState<FormFields>(initialForm);
-  const [formStatus, setFormStatus] = useState<"idle" | "sending" | "success">("idle");
-  const [formError, setFormError] = useState("");
-  const [website, setWebsite] = useState("");
   const currentPrice = priceGroups.find((group) => group.id === activePrice) ?? priceGroups[0];
 
   const closeMenu = () => setMenuOpen(false);
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  // Prezentacja portfolio: wyczyszczenie pól bez wysyłania danych do serwera.
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (formStatus === "sending") return;
-
-    setFormError("");
-    setFormStatus("sending");
-    try {
-      const response = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, website })
-      });
-      const result: { error?: string } = await response.json();
-      if (!response.ok) {
-        throw new Error(result.error || "Nie udało się wysłać wiadomości. Spróbuj ponownie.");
-      }
-      setForm(initialForm);
-      setWebsite("");
-      setFormStatus("success");
-    } catch (error) {
-      setFormError(error instanceof Error ? error.message : "Wystąpił błąd. Spróbuj ponownie później.");
-      setFormStatus("idle");
-    }
+    setForm({ ...initialForm });
   };
 
   return (
@@ -235,42 +213,29 @@ export default function Home() {
             <div className="contact__info"><div className="eyebrow eyebrow--light"><span className="eyebrow-line" /> JESTEŚMY DLA CIEBIE</div><h2>Zrób pierwszy krok <em>do swojego uśmiechu.</em></h2><p className="contact__lead">Masz pytanie lub chcesz umówić pierwszą konsultację? Napisz do nas — chętnie porozmawiamy o Twoich potrzebach.</p><div className="contact__details"><div><span className="contact__detail-icon"><MapPin size={20}/></span><div><small>LOKALIZACJA</small><strong>{clinic.city}, {clinic.neighborhood}</strong></div></div><div><span className="contact__detail-icon"><Mail size={20}/></span><div><small>ADRES E-MAIL</small><strong>{clinic.emailDisplay}</strong></div></div><div><span className="contact__detail-icon"><Clock3 size={20}/></span><div><small>GODZINY OTWARCIA</small><strong>Pon. – pt. 08:00 – 20:00</strong></div></div></div></div>
             <div className="contact__form-wrap">
               <div className="contact__form-heading"><span>FORMULARZ KONTAKTOWY</span><h3>Porozmawiajmy.</h3><p>Wybierz temat i opisz, w czym możemy Ci pomóc.</p></div>
-              {formStatus === "success" ? (
-                <div className="form-success" role="status">
-                  <CircleCheck size={42} strokeWidth={1.4}/>
-                  <h4>Dziękujemy za wiadomość!</h4>
-                  <p>Twoje zapytanie zostało wysłane. Odpowiemy najszybciej, jak to możliwe.</p>
-                  <button type="button" onClick={() => setFormStatus("idle")}>Wyślij kolejną wiadomość <ArrowRight size={16}/></button>
+              <form className="contact-form" onSubmit={handleSubmit}>
+                <div className="form-row">
+                  <label>Imię i nazwisko
+                    <input autoComplete="name" name="name" value={form.name} onChange={(e) => setForm({...form,name:e.target.value})} placeholder="Jan Kowalski" required minLength={2} maxLength={100} />
+                  </label>
+                  <label>Adres e-mail
+                    <input autoComplete="email" type="email" name="email" value={form.email} onChange={(e) => setForm({...form,email:e.target.value})} placeholder="jan@email.pl" required maxLength={150} />
+                  </label>
                 </div>
-              ) : (
-                <form className="contact-form" onSubmit={handleSubmit} aria-busy={formStatus === "sending"}>
-                  <div className="form-row">
-                    <label>Imię i nazwisko
-                      <input autoComplete="name" name="name" value={form.name} onChange={(e) => setForm({...form,name:e.target.value})} placeholder="Jan Kowalski" required minLength={2} maxLength={100} disabled={formStatus === "sending"} />
-                    </label>
-                    <label>Adres e-mail
-                      <input autoComplete="email" type="email" name="email" value={form.email} onChange={(e) => setForm({...form,email:e.target.value})} placeholder="jan@email.pl" required maxLength={150} disabled={formStatus === "sending"} />
-                    </label>
-                  </div>
-                  <label>W czym możemy pomóc?
-                    <span className="select-wrap"><select name="service" value={form.service} onChange={(e) => setForm({...form,service:e.target.value})} required disabled={formStatus === "sending"}>
-                      <option value="" disabled>Wybierz temat</option>
-                      {contactTopics.map((topic) => <option key={topic} value={topic}>{topic}</option>)}
-                    </select><ChevronDown size={18}/></span>
-                  </label>
-                  <label>Twoja wiadomość
-                    <textarea name="message" value={form.message} onChange={(e) => setForm({...form,message:e.target.value})} placeholder="Napisz nam kilka słów..." rows={3} minLength={10} maxLength={2000} required disabled={formStatus === "sending"} />
-                  </label>
-                  <div className="form-honeypot" aria-hidden="true">
-                    <label>Strona internetowa <input tabIndex={-1} autoComplete="off" name="website" value={website} onChange={(e) => setWebsite(e.target.value)} /></label>
-                  </div>
-                  <p className="form-disclaimer">Nie przesyłaj informacji o stanie zdrowia ani dokumentacji medycznej. Użyj formularza do ogólnych pytań i próśb o kontakt.</p>
-                  {formError && <p className="form-error" role="alert">{formError}</p>}
-                  <button className="button button--dark form-submit" type="submit" disabled={formStatus === "sending"}>
-                    {formStatus === "sending" ? "Wysyłanie..." : "Wyślij zapytanie"} <ArrowUpRight size={19}/>
-                  </button>
-                </form>
-              )}
+                <label>W czym możemy pomóc?
+                  <span className="select-wrap"><select name="service" value={form.service} onChange={(e) => setForm({...form,service:e.target.value})} required>
+                    <option value="" disabled>Wybierz temat</option>
+                    {contactTopics.map((topic) => <option key={topic} value={topic}>{topic}</option>)}
+                  </select><ChevronDown size={18}/></span>
+                </label>
+                <label>Twoja wiadomość
+                  <textarea name="message" value={form.message} onChange={(e) => setForm({...form,message:e.target.value})} placeholder="Napisz nam kilka słów..." rows={3} minLength={10} maxLength={2000} required />
+                </label>
+                <p className="form-disclaimer">Nie przesyłaj informacji o stanie zdrowia ani dokumentacji medycznej. Użyj formularza do ogólnych pytań i próśb o kontakt.</p>
+                <button className="button button--dark form-submit" type="submit">
+                  Wyślij zapytanie <ArrowUpRight size={19}/>
+                </button>
+              </form>
             </div>
           </div>
         </section>
