@@ -67,13 +67,35 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activePrice, setActivePrice] = useState<string>(priceGroups[0].id);
   const [form, setForm] = useState<FormFields>(initialForm);
+  const [website, setWebsite] = useState("");
+  const [formStatus, setFormStatus] = useState<"idle" | "sending" | "success">("idle");
+  const [formError, setFormError] = useState("");
   const currentPrice = priceGroups.find((group) => group.id === activePrice) ?? priceGroups[0];
 
   const closeMenu = () => setMenuOpen(false);
-  // Prezentacja portfolio: wyczyszczenie pól bez wysyłania danych do serwera.
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setForm({ ...initialForm });
+    if (formStatus === "sending") return;
+
+    setFormError("");
+    setFormStatus("sending");
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, website })
+      });
+      const result: { error?: string } = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Nie udało się wysłać wiadomości. Spróbuj ponownie.");
+      }
+      setForm({ ...initialForm });
+      setWebsite("");
+      setFormStatus("success");
+    } catch (error) {
+      setFormStatus("idle");
+      setFormError(error instanceof Error ? error.message : "Nie udało się wysłać wiadomości. Spróbuj później.");
+    }
   };
 
   return (
@@ -214,6 +236,11 @@ export default function Home() {
             <div className="contact__form-wrap">
               <div className="contact__form-heading"><span>FORMULARZ KONTAKTOWY</span><h3>Porozmawiajmy.</h3><p>Wybierz temat i opisz, w czym możemy Ci pomóc.</p></div>
               <form className="contact-form" onSubmit={handleSubmit}>
+                <div aria-hidden="true" className="form-honeypot">
+                  <label>Strona internetowa (pozostaw puste)
+                    <input type="text" name="website" value={website} onChange={(e) => setWebsite(e.target.value)} tabIndex={-1} autoComplete="off" />
+                  </label>
+                </div>
                 <div className="form-row">
                   <label>Imię i nazwisko
                     <input autoComplete="name" name="name" value={form.name} onChange={(e) => setForm({...form,name:e.target.value})} placeholder="Jan Kowalski" required minLength={2} maxLength={100} />
@@ -232,9 +259,11 @@ export default function Home() {
                   <textarea name="message" value={form.message} onChange={(e) => setForm({...form,message:e.target.value})} placeholder="Napisz nam kilka słów..." rows={3} minLength={10} maxLength={2000} required />
                 </label>
                 <p className="form-disclaimer">Nie przesyłaj informacji o stanie zdrowia ani dokumentacji medycznej. Użyj formularza do ogólnych pytań i próśb o kontakt.</p>
-                <button className="button button--dark form-submit" type="submit">
-                  Wyślij zapytanie <ArrowUpRight size={19}/>
+                <button className="button button--dark form-submit" type="submit" disabled={formStatus === "sending"}>
+                  {formStatus === "sending" ? "Wysyłanie..." : "Wyślij zapytanie"} <ArrowUpRight size={19}/>
                 </button>
+                {formError && <p className="form-status form-status--error" role="alert">{formError}</p>}
+                {formStatus === "success" && <p className="form-status form-status--success" role="status">Wiadomość została wysłana. Dziękujemy za kontakt!</p>}
               </form>
             </div>
           </div>
